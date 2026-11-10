@@ -1,0 +1,7 @@
+version: "0.2"
+ignorePaths: ["bin/", "obj/"]
+dictionaryDefinitions: []
+dictionaries: []
+words: ["valheim", "Valheim"]
+ignoreWords: []
+import: []
