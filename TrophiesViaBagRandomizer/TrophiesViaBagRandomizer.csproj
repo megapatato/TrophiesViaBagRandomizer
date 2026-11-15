@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -60,5 +60,16 @@
     <Reference Include="assembly_valheim, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
         <HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
     </Reference>
-</ItemGroup>
+  </ItemGroup>
+
+  <Target Name="CopyToBepInExPluginFolder" AfterTargets="Build">
+    <Message Text="Copying to BepInEx plugin subfolder" Importance="high" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).dll" DestinationFolder="$(GamePath)\BepInEx\plugins\$(TargetName)"></Copy>
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(GamePath)\BepInEx\plugins\$(TargetName)"></Copy>
+  </Target>
+
+  <Target Name="CleanInstall" AfterTargets="CoreClean">
+    <Message Text="Deleting BepInEx plugin subfolder" Importance="high"/>
+    <RemoveDir Directories="$(GamePath)\BepInEx\plugins\$(TargetName)" />
+  </Target>
 </Project>
