@@ -45,25 +45,31 @@ public class Plugin : BaseUnityPlugin
         public Bag(float probability, GameObject trophy_drop)
         {
             size = Mathf.FloorToInt(1/probability);
-            tries = 0;
             trophy = trophy_drop;
-            ResetWinner();
+            Reset();
         }
 
-        private void ResetWinner()
+        private void Reset(int starting_try = 0)
         {
-            winner = UnityEngine.Random.Range(0, size);
-        }
-
-        public bool NewTry()
-        {
-            bool is_winner = tries == winner;
-
-            tries += 1;
-            if (tries >= size)
+            if (starting_try < 0)
             {
-                Logger.LogDebug("Bag has run out; resetting.");
-                ResetWinner();
+                Logger.LogError($"Got a starting_try of {starting_try}! Resetting it to 0.");
+                starting_try = 0;
+            }
+            winner = UnityEngine.Random.Range(0, size);
+            tries = starting_try;
+        }
+
+        public bool NewTry(int level)
+        {
+            tries += 2^(level - 1);
+            bool is_winner = tries >= winner;
+            
+            int overflow = tries - size;
+            if (overflow >= 0)
+            {
+                Logger.LogDebug($"Bag has run out; resetting with {overflow} tries.");
+                Reset(overflow);
             }
             return is_winner;
         }
@@ -155,7 +161,7 @@ public class Plugin : BaseUnityPlugin
                 if (drop.m_prefab.TryGetComponent<ItemDrop>(out var component) && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                 {
                     Logger.LogInfo($"Event's drop list had a trophy-type entry; associated bag for {__instance.m_character.GetName()} has {TrophyBags.bags[this_char]}");
-                    bool success = TrophyBags.bags[this_char].NewTry();
+                    bool success = TrophyBags.bags[this_char].NewTry(this_char.GetLevel());
                     if (success)
                     {
                         // These vanilla checks are kept
