@@ -129,28 +129,33 @@ public class Plugin : BaseUnityPlugin
     [HarmonyPatch(typeof(CharacterDrop), nameof(CharacterDrop.GenerateDropList))]
     private static class CharacterDrop_GenerateDropList_Patch
     {
-        private static void PostFix(CharacterDrop __instance, ref List<KeyValuePair<GameObject, int>> __result)
+        private static void Postfix(CharacterDrop __instance, ref List<KeyValuePair<GameObject, int>> __result)
         {
-            Logger.LogDebug("CharacterDrop.GenerateDropList.PostFix");
-            foreach (KeyValuePair<GameObject, int> drop in __result)
+            Character this_char = __instance.m_character;
+            Logger.LogDebug($"CharacterDrop.GenerateDropList.Postfix for {this_char.GetName()}");
+            
+            // removing trophies awared by the build-in logic
+            foreach (KeyValuePair<GameObject, int> drop in __result.ToList())
             {
                 if (drop.Key != null && drop.Key.TryGetComponent<ItemDrop>(out var component) && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                 {
-                    Logger.LogInfo($"Found trophy {component.m_itemData.m_shared.m_name} in drop table from built-in logic! Removing it.");
+                    Logger.LogInfo($"Found trophy {component.m_itemData.m_shared.m_name} in drop table from built-in logic; removing it.");
                     __result.Remove(drop);
                 }
             }
+
+            // adding trophies awared by bag randomizer logic
             foreach (CharacterDrop.Drop drop in __instance.m_drops)
             {
                 if (drop == null)
                 {
-                    Logger.LogError("Got a null in the drop list!! CharacterDrops.m_drops must be List<Drop?>");
+                    Logger.LogInfo("Got a null in the drop list. CharacterDrops.m_drops must be List<Drop?>");
                     break;
                 }
                 if (drop.m_prefab.TryGetComponent<ItemDrop>(out var component) && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                 {
-                    Logger.LogInfo($"Event's drop list had a trophy-type entry! Associated bag for {__instance.m_character.GetName()} has {TrophyBags.bags[__instance.m_character]}");
-                    bool success = TrophyBags.bags[__instance.m_character].NewTry();
+                    Logger.LogInfo($"Event's drop list had a trophy-type entry; associated bag for {__instance.m_character.GetName()} has {TrophyBags.bags[this_char]}");
+                    bool success = TrophyBags.bags[this_char].NewTry();
                     if (success)
                     {
                         // These vanilla checks are kept
@@ -169,8 +174,8 @@ public class Plugin : BaseUnityPlugin
                         }
                         
                         // Inject into the DropList that's about to be spawned
-                        Logger.LogInfo($"Success! Adding {how_many} copies of {TrophyBags.bags[__instance.m_character].trophy.GetName()} to dropping list.");
-                        __result.Add(new KeyValuePair<GameObject, int>(TrophyBags.bags[__instance.m_character].trophy, how_many));
+                        Logger.LogInfo($"Success! Adding {how_many} copies of {TrophyBags.bags[this_char].trophy.GetName()} to dropping list.");
+                        __result.Add(new KeyValuePair<GameObject, int>(TrophyBags.bags[this_char].trophy, how_many));
                     }
                 }
             }
