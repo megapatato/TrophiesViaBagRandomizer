@@ -62,8 +62,8 @@ public class Plugin : BaseUnityPlugin
 
         public bool NewTry(int level)
         {
-            tries += 2^(level - 1);
             bool is_winner = tries >= winner;
+            tries += 2^(level - 1);
             
             int overflow = tries - size;
             if (overflow >= 0)
@@ -76,17 +76,17 @@ public class Plugin : BaseUnityPlugin
 
         public override string ToString()
         {
-            return $"{tries} tries of {size} maximum, award at {winner} trophy {trophy.GetName()}";
+            return $"{tries} tries of {size} maximum, award at {winner}:\t{trophy.GetName()}";
         }
     }
 
     public static class TrophyBags
     {
-        public static Dictionary<Character, Bag> bags = [];
+        public static Dictionary<string, Bag> bags = [];
 
         public static string BagToString()
         {
-            return string.Join("\n", bags.Select(res => $"{res.Key.GetName()}:\t{res.Value}"));
+            return string.Join("\n", bags.Select(res => $"{res.Key}:\t{res.Value}"));
         }
 
         public static void Regenerate()
@@ -104,7 +104,7 @@ public class Plugin : BaseUnityPlugin
                         drop.m_prefab.TryGetComponent<ItemDrop>(out var component);
                         if (component != null && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                         {
-                            bags.Add(character.GetComponent<Character>(), new Bag(drop.m_chance, drop.m_prefab));
+                            bags.Add(character.GetComponent<Character>().GetName(), new Bag(drop.m_chance, drop.m_prefab));
                         }
                     }
                 }
@@ -137,8 +137,15 @@ public class Plugin : BaseUnityPlugin
     {
         private static void Postfix(CharacterDrop __instance, ref List<KeyValuePair<GameObject, int>> __result)
         {
-            Character this_char = __instance.m_character;
-            Logger.LogDebug($"CharacterDrop.GenerateDropList.Postfix for {this_char.GetName()}");
+            string clone_name = __instance.m_character.GetName();
+            if (!clone_name.Contains("(Clone)"))
+            {
+                Logger.LogError($"Character instance named {clone_name} does not contain the <(Clone)> substring!");
+                return;
+            }
+
+            string prefab_name = clone_name.Split("(Clone)")[0];
+            Logger.LogDebug($"CharacterDrop.GenerateDropList.Postfix for {prefab_name}");
             
             // removing trophies awared by the build-in logic
             foreach (KeyValuePair<GameObject, int> drop in __result.ToList())
@@ -160,8 +167,8 @@ public class Plugin : BaseUnityPlugin
                 }
                 if (drop.m_prefab.TryGetComponent<ItemDrop>(out var component) && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                 {
-                    Logger.LogInfo($"Event's drop list had a trophy-type entry; associated bag for {__instance.m_character.GetName()} has {TrophyBags.bags[this_char]}");
-                    bool success = TrophyBags.bags[this_char].NewTry(this_char.GetLevel());
+                    Logger.LogInfo($"Event's drop list had a trophy-type entry; associated bag for {prefab_name} has {TrophyBags.bags[prefab_name]}");
+                    bool success = TrophyBags.bags[prefab_name].NewTry(__instance.m_character.GetLevel());
                     if (success)
                     {
                         // These vanilla checks are kept
@@ -180,8 +187,8 @@ public class Plugin : BaseUnityPlugin
                         }
                         
                         // Inject into the DropList that's about to be spawned
-                        Logger.LogInfo($"Success! Adding {how_many} copies of {TrophyBags.bags[this_char].trophy.GetName()} to dropping list.");
-                        __result.Add(new KeyValuePair<GameObject, int>(TrophyBags.bags[this_char].trophy, how_many));
+                        Logger.LogInfo($"Success! Adding {how_many} copies of {TrophyBags.bags[prefab_name].trophy.GetName()} to dropping list.");
+                        __result.Add(new KeyValuePair<GameObject, int>(TrophyBags.bags[prefab_name].trophy, how_many));
                     }
                 }
             }
