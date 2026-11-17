@@ -53,24 +53,28 @@ public class Plugin : BaseUnityPlugin
         {
             if (starting_try < 0)
             {
-                Logger.LogError($"Got a starting_try of {starting_try}! Resetting it to 0.");
+                Logger.LogError($"Got a negative starting_try of {starting_try}! Resetting it to 0.");
                 starting_try = 0;
             }
             winner = UnityEngine.Random.Range(0, size);
             tries = starting_try;
+            Logger.LogDebug($"Bag.Reset! {this}");
         }
 
         public bool NewTry(int level)
         {
-            bool is_winner = tries >= winner;
-            tries += 2^(level - 1);
-            
-            int overflow = tries - size;
+            int ending_tries = tries + (int)Mathf.Pow(2, level - 1);
+            bool is_winner = (tries <= winner) && (winner < ending_tries);
+            Logger.LogDebug($"Bag.NewTry! tries {tries}; level {level}; ending_tries {ending_tries}; winner at {winner}; is winner {is_winner}");
+            tries = ending_tries;
+
+            int overflow = ending_tries - size;
             if (overflow >= 0)
             {
-                Logger.LogDebug($"Bag has run out; resetting with {overflow} tries.");
+                Logger.LogDebug($"Bag has run out; resetting with {overflow} initial tries.");
                 Reset(overflow);
             }
+            
             return is_winner;
         }
 
@@ -84,7 +88,7 @@ public class Plugin : BaseUnityPlugin
     {
         public static Dictionary<string, Bag> bags = [];
 
-        public static string BagToString()
+        public static string BagsToString()
         {
             return string.Join("\n", bags.Select(res => $"{res.Key}:\t{res.Value}"));
         }
@@ -109,7 +113,7 @@ public class Plugin : BaseUnityPlugin
                     }
                 }
             }
-            Logger.LogDebug("Trophy bags (re)generated!:\n" + BagToString());
+            Logger.LogDebug("Trophy bags (re)generated!:\n" + BagsToString());
         }
     }
         
@@ -152,7 +156,7 @@ public class Plugin : BaseUnityPlugin
             {
                 if (drop.Key != null && drop.Key.TryGetComponent<ItemDrop>(out var component) && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                 {
-                    Logger.LogInfo($"Found trophy {component.m_itemData.m_shared.m_name} in drop table from built-in logic; removing it.");
+                    Logger.LogDebug($"Found trophy {component.m_itemData.m_shared.m_name} in drop table of {prefab_name} from built-in logic; removing it.");
                     __result.Remove(drop);
                 }
             }
@@ -163,11 +167,11 @@ public class Plugin : BaseUnityPlugin
                 if (drop == null)
                 {
                     Logger.LogInfo("Got a null in the drop list. CharacterDrops.m_drops must be List<Drop?>");
-                    break;
+                    continue;
                 }
                 if (drop.m_prefab.TryGetComponent<ItemDrop>(out var component) && component.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trophy)
                 {
-                    Logger.LogInfo($"Event's drop list had a trophy-type entry; associated bag for {prefab_name} has {TrophyBags.bags[prefab_name]}");
+                    Logger.LogDebug($"Drop list had a trophy-type entry; {prefab_name} ->\t{TrophyBags.bags[prefab_name]}");
                     bool success = TrophyBags.bags[prefab_name].NewTry(__instance.m_character.GetLevel());
                     if (success)
                     {
@@ -187,7 +191,7 @@ public class Plugin : BaseUnityPlugin
                         }
                         
                         // Inject into the DropList that's about to be spawned
-                        Logger.LogInfo($"Success! Adding {how_many} copies of {TrophyBags.bags[prefab_name].trophy.GetName()} to dropping list.");
+                        Logger.LogDebug($"Draw success! Adding {how_many} cop" + (how_many == 1 ? "y" : "ies") + $" of {TrophyBags.bags[prefab_name].trophy.GetName()} to dropping list.");
                         __result.Add(new KeyValuePair<GameObject, int>(TrophyBags.bags[prefab_name].trophy, how_many));
                     }
                 }
