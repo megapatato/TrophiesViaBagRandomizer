@@ -23,7 +23,7 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
   <Choose>
@@ -58,7 +58,10 @@
 
   <ItemGroup>
     <Reference Include="assembly_valheim, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-        <HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
+      <HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="assembly_utils, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_utils_publicized.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -69,7 +72,7 @@
   </Target>
 
   <Target Name="CleanInstall" AfterTargets="CoreClean">
-    <Message Text="Deleting BepInEx plugin subfolder" Importance="high"/>
+    <Message Text="Deleting BepInEx plugin subfolder" Importance="high" />
     <RemoveDir Directories="$(GamePath)\BepInEx\plugins\$(TargetName)" />
   </Target>
 </Project>
